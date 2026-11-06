@@ -3,13 +3,13 @@
 ## Where things live
 - Code: GitHub (<aeckert252>/datascience_env_monit),
   my laptop, cluster HOME
-- Results: cluster workspace `envmon`, path: <from ws_list>
+- Results: cluster workspace `envmon`, path:  /pfs/work9/workspace/scratch/fr_ae252-envmon
 
 ## Expiry
-- Workspace `envmon` expires on: <date from ws_list>
-- I extend it on: <date>. Calendar reminder set: yes/no
+- Workspace `envmon` expires on: Tue Jan  5 11:39:52 2027
+- I extend it on: 3.01.2027. Calendar reminder set: yes
 
 ## Backup
 - Code: GitHub is the second copy
-- Results I must keep: copied to my laptop on <date>
-- Raw data: original download source + <university storage>
+- Results I must keep: copied to my laptop on 06.11.2026
+- Raw data: original download source 
