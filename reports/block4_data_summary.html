@@ -2211,7 +2211,14 @@ vertical-align: -.125em;
   <ul>
   <li><a href="#c1.-site-overview" id="toc-c1.-site-overview" class="nav-link active" data-scroll-target="#c1.-site-overview">C1. Site overview</a></li>
   <li><a href="#c2.-data-coverage" id="toc-c2.-data-coverage" class="nav-link" data-scroll-target="#c2.-data-coverage">C2. Data coverage</a></li>
-  <li><a href="#c3.-summary-statistics" id="toc-c3.-summary-statistics" class="nav-link" data-scroll-target="#c3.-summary-statistics">C3. Summary statistics</a></li>
+  <li><a href="#c3.-summary-statistics" id="toc-c3.-summary-statistics" class="nav-link" data-scroll-target="#c3.-summary-statistics">C3. Summary statistics</a>
+  <ul class="collapse">
+  <li><a href="#de-lnf" id="toc-de-lnf" class="nav-link" data-scroll-target="#de-lnf">DE-Lnf</a></li>
+  <li><a href="#fi-let" id="toc-fi-let" class="nav-link" data-scroll-target="#fi-let">FI-Let</a></li>
+  <li><a href="#us-kon" id="toc-us-kon" class="nav-link" data-scroll-target="#us-kon">US-Kon</a></li>
+  <li><a href="#cn-lch" id="toc-cn-lch" class="nav-link" data-scroll-target="#cn-lch">CN-Lch</a></li>
+  <li><a href="#au-cpr" id="toc-au-cpr" class="nav-link" data-scroll-target="#au-cpr">AU-Cpr</a></li>
+  </ul></li>
   <li><a href="#c4.-time-series" id="toc-c4.-time-series" class="nav-link" data-scroll-target="#c4.-time-series">C4. Time series</a></li>
   <li><a href="#c5.-diurnal-cycles" id="toc-c5.-diurnal-cycles" class="nav-link" data-scroll-target="#c5.-diurnal-cycles">C5. Diurnal cycles</a></li>
   <li><a href="#c6.-your-reading" id="toc-c6.-your-reading" class="nav-link" data-scroll-target="#c6.-your-reading">C6. Your reading</a></li>
@@ -2405,9 +2412,509 @@ vertical-align: -.125em;
 </section>
 <section id="c2.-data-coverage" class="level1">
 <h1>C2. Data coverage</h1>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>coverage <span class="ot">&lt;-</span> all_hh <span class="sc">|&gt;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year =</span> <span class="fu">as.integer</span>(<span class="fu">format</span>(time, <span class="st">&quot;%Y&quot;</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(site, year) <span class="sc">|&gt;</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">share =</span> <span class="fu">mean</span>(NEE_VUT_REF_QC <span class="sc">==</span> <span class="dv">0</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(coverage, <span class="fu">aes</span>(year, site, <span class="at">fill =</span> share)) <span class="sc">+</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_tile</span>(<span class="at">colour =</span> <span class="st">&quot;white&quot;</span>) <span class="sc">+</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_viridis_c</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">name =</span> <span class="st">&quot;Share measured&quot;</span>) <span class="sc">+</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">2002</span>, <span class="dv">2026</span>, <span class="dv">2</span>)) <span class="sc">+</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">&quot;Year&quot;</span>, <span class="at">y =</span> <span class="st">&quot;Site&quot;</span>) <span class="sc">+</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img role="img" src="data:image/png;base64,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ACSAAA8AAAAJIMADAABAAgjwAAAAkAACPAAAACSAAA8AAAAJIMADAABAAgjwAAAAkAACPAAAACSAAA8AAAAJIMADAABAAgjwAAAAkAACPAAAACSAAA8AAAAJIMADAABAAgjwAAAAkAACPAAAACSAAA8AAAAJIMADAABAAgjwAAAAkAACPAAAACSAAA8AAAAJkOp2u/PuA7N2cHBw48aNaTcRQph2K0dtzaYhAIAozfJvbsB1/GzeHYBkmNkvttk8j3A7Yzc0XivZf/cPJ96ZM3b/m1//i//642m3EkL4R3//wT//6z+ediv/5x/+8v3CH027lRDCt9Vfvf8fTP3fTgjh2//y17c/m/r39uqzX67en8X3tvf0V6t/feoN7f0Xv5rZj8HaX/mDabfS+Ae/WftXp95KCKHxP/3mL//Ob2bQ0P/8Z3/wl3+xOfVW/vzJB391Fv9z++bvPfiX/6Wtabfyv/yvj9buzOTH4OUsfgaA2TOFHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAEEOABAAAgAQR4AAAASAABHgAAABJAgAcAAIAE+Nm8OzAF+y9K93c6lx2x9ujl5urxkYd/vMzekztb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" class="img-fluid figure-img" width="672"></p>
+<figcaption>Share of half hours with measured NEE (NEE_VUT_REF_QC == 0) per site and year.</figcaption>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>best <span class="ot">&lt;-</span> coverage <span class="sc">|&gt;</span> <span class="fu">arrange</span>(<span class="fu">desc</span>(share)) <span class="sc">|&gt;</span> <span class="fu">slice</span>(<span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Best coverage: site AU-Cpr in 2012 (58 % of half hours measured).</p>
 </section>
 <section id="c3.-summary-statistics" class="level1">
 <h1>C3. Summary statistics</h1>
+<p>Mean, minimum, maximum and share of missing half hours (<code>NA</code> after reading −9999) per site, computed from the half-hourly data. For precipitation (<code>P_F</code>), the mean is the <strong>mean annual sum</strong> over complete years; minimum and maximum are per half hour.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>var_labels <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">TA_F            =</span> <span class="st">&quot;Air temperature TA_F (°C)&quot;</span>,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">SW_IN_F         =</span> <span class="st">&quot;Incoming shortwave SW_IN_F (W m⁻²)&quot;</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">VPD_F           =</span> <span class="st">&quot;Vapour pressure deficit VPD_F (hPa)&quot;</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">P_F             =</span> <span class="st">&quot;Precipitation P_F (mm yr⁻¹ mean; min/max in mm per 30 min)&quot;</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">NEE_VUT_REF     =</span> <span class="st">&quot;NEE_VUT_REF (µmol CO₂ m⁻² s⁻¹)&quot;</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">GPP_NT_VUT_REF  =</span> <span class="st">&quot;GPP_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)&quot;</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">RECO_NT_VUT_REF =</span> <span class="st">&quot;RECO_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)&quot;</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">H_F_MDS         =</span> <span class="st">&quot;Sensible heat H_F_MDS (W m⁻²)&quot;</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">LE_F_MDS        =</span> <span class="st">&quot;Latent heat LE_F_MDS (W m⁻²)&quot;</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>long <span class="ot">&lt;-</span> all_hh <span class="sc">|&gt;</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(site, <span class="fu">all_of</span>(<span class="fu">names</span>(var_labels))) <span class="sc">|&gt;</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">pivot_longer</span>(<span class="sc">-</span>site, <span class="at">names_to =</span> <span class="st">&quot;var&quot;</span>, <span class="at">values_to =</span> <span class="st">&quot;value&quot;</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>stats <span class="ot">&lt;-</span> long <span class="sc">|&gt;</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(site, var) <span class="sc">|&gt;</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>            <span class="at">min  =</span> <span class="fu">min</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>            <span class="at">max  =</span> <span class="fu">max</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>            <span class="at">pct_missing =</span> <span class="dv">100</span> <span class="sc">*</span> <span class="fu">mean</span>(<span class="fu">is.na</span>(value)),</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>            <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Mean annual precipitation sum (complete years only)</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>precip <span class="ot">&lt;-</span> all_hh <span class="sc">|&gt;</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">year =</span> <span class="fu">as.integer</span>(<span class="fu">format</span>(time, <span class="st">&quot;%Y&quot;</span>))) <span class="sc">|&gt;</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(site, year) <span class="sc">|&gt;</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>(), <span class="at">annual =</span> <span class="fu">sum</span>(P_F, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(n <span class="sc">&gt;=</span> <span class="dv">17520</span>) <span class="sc">|&gt;</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(site) <span class="sc">|&gt;</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">p_annual =</span> <span class="fu">mean</span>(annual), <span class="at">.groups =</span> <span class="st">&quot;drop&quot;</span>)</span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>stats <span class="ot">&lt;-</span> stats <span class="sc">|&gt;</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(precip, <span class="at">by =</span> <span class="st">&quot;site&quot;</span>) <span class="sc">|&gt;</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">mean =</span> <span class="fu">if_else</span>(var <span class="sc">==</span> <span class="st">&quot;P_F&quot;</span>, p_annual, mean),</span>
+<span id="cb6-37"><a href="#cb6-37" aria-hidden="true" tabindex="-1"></a>         <span class="at">Variable =</span> <span class="fu">factor</span>(var_labels[var], <span class="at">levels =</span> var_labels)) <span class="sc">|&gt;</span></span>
+<span id="cb6-38"><a href="#cb6-38" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(site, Variable)</span>
+<span id="cb6-39"><a href="#cb6-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-40"><a href="#cb6-40" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (s <span class="cf">in</span> my_sites) {</span>
+<span id="cb6-41"><a href="#cb6-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">### &quot;</span>, s, <span class="st">&quot;</span><span class="sc">\n\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-42"><a href="#cb6-42" aria-hidden="true" tabindex="-1"></a>  tab <span class="ot">&lt;-</span> stats <span class="sc">|&gt;</span></span>
+<span id="cb6-43"><a href="#cb6-43" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(site <span class="sc">==</span> s) <span class="sc">|&gt;</span></span>
+<span id="cb6-44"><a href="#cb6-44" aria-hidden="true" tabindex="-1"></a>    <span class="fu">transmute</span>(Variable, <span class="at">Mean =</span> mean, <span class="at">Min =</span> min, <span class="at">Max =</span> max, <span class="st">`</span><span class="at">Missing (%)</span><span class="st">`</span> <span class="ot">=</span> pct_missing)</span>
+<span id="cb6-45"><a href="#cb6-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cat</span>(<span class="fu">kable</span>(tab, <span class="at">digits =</span> <span class="dv">2</span>), <span class="at">sep =</span> <span class="st">&quot;</span><span class="sc">\n</span><span class="st">&quot;</span>)</span>
+<span id="cb6-46"><a href="#cb6-46" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="de-lnf" class="level3">
+<h3 class="anchored" data-anchor-id="de-lnf">DE-Lnf</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 63%">
+<col style="width: 7%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Variable</th>
+<th style="text-align: right;">Mean</th>
+<th style="text-align: right;">Min</th>
+<th style="text-align: right;">Max</th>
+<th style="text-align: right;">Missing (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Air temperature TA_F (°C)</td>
+<td style="text-align: right;">8.78</td>
+<td style="text-align: right;">-20.48</td>
+<td style="text-align: right;">36.26</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Incoming shortwave SW_IN_F (W m⁻²)</td>
+<td style="text-align: right;">126.44</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">1103.30</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vapour pressure deficit VPD_F (hPa)</td>
+<td style="text-align: right;">3.49</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">48.40</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Precipitation P_F (mm yr⁻¹ mean; min/max in mm per 30 min)</td>
+<td style="text-align: right;">575.75</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">20.20</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NEE_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">NaN</td>
+<td style="text-align: right;">Inf</td>
+<td style="text-align: right;">-Inf</td>
+<td style="text-align: right;">100.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GPP_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">NaN</td>
+<td style="text-align: right;">Inf</td>
+<td style="text-align: right;">-Inf</td>
+<td style="text-align: right;">100.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RECO_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">NaN</td>
+<td style="text-align: right;">Inf</td>
+<td style="text-align: right;">-Inf</td>
+<td style="text-align: right;">100.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sensible heat H_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">21.55</td>
+<td style="text-align: right;">-50.00</td>
+<td style="text-align: right;">499.86</td>
+<td style="text-align: right;">15.68</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Latent heat LE_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">26.73</td>
+<td style="text-align: right;">-49.88</td>
+<td style="text-align: right;">593.30</td>
+<td style="text-align: right;">16.19</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="fi-let" class="level3">
+<h3 class="anchored" data-anchor-id="fi-let">FI-Let</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 63%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 7%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Variable</th>
+<th style="text-align: right;">Mean</th>
+<th style="text-align: right;">Min</th>
+<th style="text-align: right;">Max</th>
+<th style="text-align: right;">Missing (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Air temperature TA_F (°C)</td>
+<td style="text-align: right;">5.67</td>
+<td style="text-align: right;">-29.78</td>
+<td style="text-align: right;">30.87</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Incoming shortwave SW_IN_F (W m⁻²)</td>
+<td style="text-align: right;">104.76</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">979.80</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vapour pressure deficit VPD_F (hPa)</td>
+<td style="text-align: right;">2.55</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">31.53</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Precipitation P_F (mm yr⁻¹ mean; min/max in mm per 30 min)</td>
+<td style="text-align: right;">604.17</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">28.64</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NEE_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">-0.05</td>
+<td style="text-align: right;">-78.14</td>
+<td style="text-align: right;">45.69</td>
+<td style="text-align: right;">1.13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GPP_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">3.28</td>
+<td style="text-align: right;">-43.87</td>
+<td style="text-align: right;">78.14</td>
+<td style="text-align: right;">1.13</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RECO_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">3.24</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">17.02</td>
+<td style="text-align: right;">1.13</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sensible heat H_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">36.17</td>
+<td style="text-align: right;">-247.60</td>
+<td style="text-align: right;">922.20</td>
+<td style="text-align: right;">0.74</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Latent heat LE_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">29.98</td>
+<td style="text-align: right;">-297.00</td>
+<td style="text-align: right;">987.00</td>
+<td style="text-align: right;">0.74</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="us-kon" class="level3">
+<h3 class="anchored" data-anchor-id="us-kon">US-Kon</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 62%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Variable</th>
+<th style="text-align: right;">Mean</th>
+<th style="text-align: right;">Min</th>
+<th style="text-align: right;">Max</th>
+<th style="text-align: right;">Missing (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Air temperature TA_F (°C)</td>
+<td style="text-align: right;">13.26</td>
+<td style="text-align: right;">-23.27</td>
+<td style="text-align: right;">40.62</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Incoming shortwave SW_IN_F (W m⁻²)</td>
+<td style="text-align: right;">181.41</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">1094.10</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vapour pressure deficit VPD_F (hPa)</td>
+<td style="text-align: right;">7.55</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">62.63</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Precipitation P_F (mm yr⁻¹ mean; min/max in mm per 30 min)</td>
+<td style="text-align: right;">713.56</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">35.56</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NEE_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">-0.31</td>
+<td style="text-align: right;">-77.37</td>
+<td style="text-align: right;">49.96</td>
+<td style="text-align: right;">2.28</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GPP_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">4.10</td>
+<td style="text-align: right;">-44.83</td>
+<td style="text-align: right;">82.02</td>
+<td style="text-align: right;">2.28</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RECO_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">3.81</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">17.96</td>
+<td style="text-align: right;">2.28</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sensible heat H_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">20.12</td>
+<td style="text-align: right;">-217.83</td>
+<td style="text-align: right;">595.24</td>
+<td style="text-align: right;">2.28</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Latent heat LE_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">54.95</td>
+<td style="text-align: right;">-178.56</td>
+<td style="text-align: right;">728.61</td>
+<td style="text-align: right;">2.28</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="cn-lch" class="level3">
+<h3 class="anchored" data-anchor-id="cn-lch">CN-Lch</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 62%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Variable</th>
+<th style="text-align: right;">Mean</th>
+<th style="text-align: right;">Min</th>
+<th style="text-align: right;">Max</th>
+<th style="text-align: right;">Missing (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Air temperature TA_F (°C)</td>
+<td style="text-align: right;">12.61</td>
+<td style="text-align: right;">-27.60</td>
+<td style="text-align: right;">46.29</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Incoming shortwave SW_IN_F (W m⁻²)</td>
+<td style="text-align: right;">155.14</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">1200.84</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vapour pressure deficit VPD_F (hPa)</td>
+<td style="text-align: right;">7.24</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">87.94</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Precipitation P_F (mm yr⁻¹ mean; min/max in mm per 30 min)</td>
+<td style="text-align: right;">413.66</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">69.40</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NEE_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">-1.77</td>
+<td style="text-align: right;">-79.86</td>
+<td style="text-align: right;">49.98</td>
+<td style="text-align: right;">9.45</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GPP_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">5.59</td>
+<td style="text-align: right;">-49.49</td>
+<td style="text-align: right;">103.01</td>
+<td style="text-align: right;">9.45</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RECO_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">3.75</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">29.63</td>
+<td style="text-align: right;">9.45</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sensible heat H_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">15.69</td>
+<td style="text-align: right;">-196.75</td>
+<td style="text-align: right;">467.48</td>
+<td style="text-align: right;">9.19</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Latent heat LE_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">52.09</td>
+<td style="text-align: right;">-299.63</td>
+<td style="text-align: right;">827.03</td>
+<td style="text-align: right;">9.19</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="au-cpr" class="level3">
+<h3 class="anchored" data-anchor-id="au-cpr">AU-Cpr</h3>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 63%">
+<col style="width: 7%">
+<col style="width: 7%">
+<col style="width: 8%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Variable</th>
+<th style="text-align: right;">Mean</th>
+<th style="text-align: right;">Min</th>
+<th style="text-align: right;">Max</th>
+<th style="text-align: right;">Missing (%)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Air temperature TA_F (°C)</td>
+<td style="text-align: right;">18.02</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">47.72</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Incoming shortwave SW_IN_F (W m⁻²)</td>
+<td style="text-align: right;">217.18</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">1255.00</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Vapour pressure deficit VPD_F (hPa)</td>
+<td style="text-align: right;">12.97</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">101.60</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Precipitation P_F (mm yr⁻¹ mean; min/max in mm per 30 min)</td>
+<td style="text-align: right;">242.37</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">20.20</td>
+<td style="text-align: right;">0.00</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">NEE_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">-0.51</td>
+<td style="text-align: right;">-30.53</td>
+<td style="text-align: right;">34.30</td>
+<td style="text-align: right;">4.55</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GPP_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">1.28</td>
+<td style="text-align: right;">-33.89</td>
+<td style="text-align: right;">31.02</td>
+<td style="text-align: right;">4.55</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">RECO_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)</td>
+<td style="text-align: right;">0.76</td>
+<td style="text-align: right;">0.00</td>
+<td style="text-align: right;">6.21</td>
+<td style="text-align: right;">4.55</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sensible heat H_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">62.60</td>
+<td style="text-align: right;">-99.00</td>
+<td style="text-align: right;">599.00</td>
+<td style="text-align: right;">4.18</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Latent heat LE_F_MDS (W m⁻²)</td>
+<td style="text-align: right;">18.16</td>
+<td style="text-align: right;">-80.00</td>
+<td style="text-align: right;">512.00</td>
+<td style="text-align: right;">4.18</td>
+</tr>
+</tbody>
+</table>
+</section>
 </section>
 <section id="c4.-time-series" class="level1">
 <h1>C4. Time series</h1>

@@ -69,8 +69,85 @@ ggplot() +
 ```
 
 # C2. Data coverage
+```{r}
+#| label: c2-coverage
+#| fig-cap: "Share of half hours with measured NEE (NEE_VUT_REF_QC == 0) per site and year."
+coverage <- all_hh |>
+  mutate(year = as.integer(format(time, "%Y"))) |>
+  group_by(site, year) |>
+  summarise(share = mean(NEE_VUT_REF_QC == 0, na.rm = TRUE), .groups = "drop")
+
+ggplot(coverage, aes(year, site, fill = share)) +
+  geom_tile(colour = "white") +
+  scale_fill_viridis_c(limits = c(0, 1), name = "Share measured") +
+  scale_x_continuous(breaks = seq(2002, 2026, 2)) +
+  labs(x = "Year", y = "Site") +
+  theme_minimal()
+
+best <- coverage |> arrange(desc(share)) |> slice(1)
+```
+
+Best coverage: site `r best$site` in `r best$year` (`r round(100 * best$share)` % of half hours measured).
+
+
+
 
 # C3. Summary statistics
+
+Mean, minimum, maximum and share of missing half hours (`NA` after reading −9999) per site, computed from the half-hourly data. For precipitation (`P_F`), the mean is the **mean annual sum** over complete years; minimum and maximum are per half hour.
+
+```{r}
+#| label: c3-stats
+#| results: asis
+var_labels <- c(
+  TA_F            = "Air temperature TA_F (°C)",
+  SW_IN_F         = "Incoming shortwave SW_IN_F (W m⁻²)",
+  VPD_F           = "Vapour pressure deficit VPD_F (hPa)",
+  P_F             = "Precipitation P_F (mm yr⁻¹ mean; min/max in mm per 30 min)",
+  NEE_VUT_REF     = "NEE_VUT_REF (µmol CO₂ m⁻² s⁻¹)",
+  GPP_NT_VUT_REF  = "GPP_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)",
+  RECO_NT_VUT_REF = "RECO_NT_VUT_REF (µmol CO₂ m⁻² s⁻¹)",
+  H_F_MDS         = "Sensible heat H_F_MDS (W m⁻²)",
+  LE_F_MDS        = "Latent heat LE_F_MDS (W m⁻²)"
+)
+
+long <- all_hh |>
+  select(site, all_of(names(var_labels))) |>
+  pivot_longer(-site, names_to = "var", values_to = "value")
+
+stats <- long |>
+  group_by(site, var) |>
+  summarise(mean = mean(value, na.rm = TRUE),
+            min  = min(value, na.rm = TRUE),
+            max  = max(value, na.rm = TRUE),
+            pct_missing = 100 * mean(is.na(value)),
+            .groups = "drop")
+
+# Mean annual precipitation sum (complete years only)
+precip <- all_hh |>
+  mutate(year = as.integer(format(time, "%Y"))) |>
+  group_by(site, year) |>
+  summarise(n = n(), annual = sum(P_F, na.rm = TRUE), .groups = "drop") |>
+  filter(n >= 17520) |>
+  group_by(site) |>
+  summarise(p_annual = mean(annual), .groups = "drop")
+
+stats <- stats |>
+  left_join(precip, by = "site") |>
+  mutate(mean = if_else(var == "P_F", p_annual, mean),
+         Variable = factor(var_labels[var], levels = var_labels)) |>
+  arrange(site, Variable)
+
+for (s in my_sites) {
+  cat("\n\n### ", s, "\n\n")
+  tab <- stats |>
+    filter(site == s) |>
+    transmute(Variable, Mean = mean, Min = min, Max = max, `Missing (%)` = pct_missing)
+  cat(kable(tab, digits = 2), sep = "\n")
+}
+```
+
+
 
 # C4. Time series
 
@@ -79,4 +156,3 @@ ggplot() +
 # C6. Your reading
 
 # Data and citation
-
