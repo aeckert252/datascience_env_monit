@@ -36,6 +36,14 @@ if (file.exists(cache)) {
   all_hh <- bind_rows(lapply(zips, read_hh, exdir = here("data", "raw", "unzipped")))
   saveRDS(all_hh, cache)
 }
+
+# DE-Lnf has no _VUT_ NEE/GPP/RECO in its file: use the _CUT_REF variants instead
+all_hh <- all_hh |>
+  mutate(used_cut        = site == "DE-Lnf",
+         NEE_VUT_REF     = if_else(used_cut, NEE_CUT_REF,     NEE_VUT_REF),
+         NEE_VUT_REF_QC  = if_else(used_cut, NEE_CUT_REF_QC,  NEE_VUT_REF_QC),
+         GPP_NT_VUT_REF  = if_else(used_cut, GPP_NT_CUT_REF,  GPP_NT_VUT_REF),
+         RECO_NT_VUT_REF = if_else(used_cut, RECO_NT_CUT_REF, RECO_NT_VUT_REF))
 ```
 
 # C1. Site overview
@@ -89,7 +97,7 @@ best <- coverage |> arrange(desc(share)) |> slice(1)
 
 Best coverage: site `r best$site` in `r best$year` (`r round(100 * best$share)` % of half hours measured).
 
-
+For DE-Lnf, the delivered file contains no _VUT_ values for NEE, GPP and RECO. The _CUT_REF variants (constant USTAR threshold) were used instead (NEE_CUT_REF, GPP_NT_CUT_REF, RECO_NT_CUT_REF). DE-Lnf has no data in 2007–2009 and partial gaps in 2022–2023.
 
 
 # C3. Summary statistics
@@ -150,8 +158,104 @@ for (s in my_sites) {
 
 
 # C4. Time series
+Half-hourly data were aggregated to daily means (only days with all 48 half hours). Daily means in µmol CO₂ m⁻² s⁻¹ were multiplied by 1.0378 to get g C m⁻² d⁻¹ (× 86 400 s × 12.011 g mol⁻¹ × 10⁻⁶). Variables: `NEE_VUT_REF`, `GPP_NT_VUT_REF` (night-time partitioning) and `RECO_NT_VUT_REF`.
+
+```{r}
+#| label: c4-daily
+conv <- 1.0378
+
+daily <- all_hh |>
+  mutate(date = as.Date(time)) |>
+  group_by(site, date) |>
+  summarise(n = n(),
+            NEE  = mean(NEE_VUT_REF, na.rm = TRUE) * conv,
+            GPP  = mean(GPP_NT_VUT_REF, na.rm = TRUE) * conv,
+            RECO = mean(RECO_NT_VUT_REF, na.rm = TRUE) * conv,
+            .groups = "drop") |>
+  filter(n == 48) |>
+  select(-n)
+
+daily_long <- daily |>
+  pivot_longer(c(NEE, GPP, RECO), names_to = "flux", values_to = "value")
+```
+
+```{r}
+#| label: c4-plot
+#| fig-cap: "Daily NEE, GPP and RECO (g C m⁻² d⁻¹) over the whole record, one panel per site."
+#| fig-height: 10
+ggplot(daily_long, aes(date, value, colour = flux)) +
+  geom_line(linewidth = 0.3) +
+  facet_wrap(~site, ncol = 1, scales = "free_x") +
+  labs(x = "Date (local standard time)",
+       y = expression("Flux (g C " * m^-2 * " " * d^-1 * ")"),
+       colour = "Flux") +
+  theme_minimal()
+```
+
+Check of my aggregation against the daily `FLUXMET_DD` file of site US-Kon:
+
+```{r}
+#| label: c4-check
+zip_kon <- list.files(here("data", "raw"), pattern = "US-Kon.*\\.zip$", full.names = TRUE)
+dd_name <- grep("FLUXMET_DD", unzip(zip_kon, list = TRUE)$Name, value = TRUE)
+unzip(zip_kon, files = dd_name, exdir = here("data", "raw", "unzipped"))
+
+dd <- read_csv(file.path(here("data", "raw", "unzipped"), dd_name),
+               na = "-9999", col_select = any_of(c("TIMESTAMP", "NEE_VUT_REF")),
+               col_types = cols(TIMESTAMP = "c", .default = "d")) |>
+  mutate(date = as.Date(TIMESTAMP, format = "%Y%m%d"))
+
+cmp <- daily |>
+  filter(site == "US-Kon") |>
+  inner_join(dd, by = "date", suffix = c("_mine", "_dd"))
+
+c(n_days = nrow(cmp),
+  correlation = cor(cmp$NEE, cmp$NEE_VUT_REF, use = "complete.obs"),
+  max_abs_diff = max(abs(cmp$NEE - cmp$NEE_VUT_REF), na.rm = TRUE))
+```
+
+data of C4 are coming from _CUT_
 
 # C5. Diurnal cycles
+
+Seasons are defined by meteorological months and **latitude**: for sites with latitude ≥ 0 (northern hemisphere) DJF = winter, MAM = spring, JJA = summer, SON = autumn. For AU-Cpr (latitude < 0, southern hemisphere) the seasons are shifted by six months (DJF = summer, JJA = winter, and so on). Hour of day is local standard time. Fluxes are half-hourly means over the whole record (NEE in µmol CO₂ m⁻² s⁻¹, LE in W m⁻²). For DE-Lnf, NEE is based on `NEE_CUT_REF`.
+
+```{r}
+#| label: c5-diurnal
+#| fig-cap: "Mean diurnal cycle of NEE and LE per season, all five sites."
+#| fig-height: 8
+lat_tab <- snap |> select(site = site_id, lat = location_lat)
+
+season_of <- function(month, lat) {
+  s <- c("winter", "winter", "spring", "spring", "spring", "summer",
+         "summer", "summer", "autumn", "autumn", "autumn", "winter")[month]
+  south <- c(winter = "summer", spring = "autumn", summer = "winter", autumn = "spring")
+  ifelse(lat < 0, south[s], s)
+}
+
+diurnal <- all_hh |>
+  left_join(lat_tab, by = "site") |>
+  mutate(month  = as.integer(format(time, "%m")),
+         hour   = as.integer(format(time, "%H")) + as.integer(format(time, "%M")) / 60,
+         season = factor(season_of(month, lat),
+                         levels = c("winter", "spring", "summer", "autumn"))) |>
+  group_by(site, season, hour) |>
+  summarise(NEE = mean(NEE_VUT_REF, na.rm = TRUE),
+            LE  = mean(LE_F_MDS, na.rm = TRUE), .groups = "drop") |>
+  pivot_longer(c(NEE, LE), names_to = "variable", values_to = "value") |>
+  mutate(variable = recode(variable,
+                           NEE = "NEE (µmol CO2 m-2 s-1)",
+                           LE  = "LE (W m-2)"))
+
+ggplot(diurnal, aes(hour, value, colour = site)) +
+  geom_line() +
+  facet_grid(variable ~ season, scales = "free_y") +
+  labs(x = "Hour of day (local standard time)", y = "Mean flux", colour = "Site") +
+  theme_minimal()
+```
+
+
+
 
 # C6. Your reading
 

@@ -3,7 +3,7 @@ library(dplyr)
 
 hh_vars <- c("TIMESTAMP_START", "TIMESTAMP_END", "TA_F", "SW_IN_F", "VPD_F", "P_F",
              "NETRAD", "G_F_MDS", "H_F_MDS", "H_F_MDS_QC", "LE_F_MDS", "LE_F_MDS_QC",
-             "NEE_VUT_REF", "NEE_VUT_REF_QC", "GPP_NT_VUT_REF", "RECO_NT_VUT_REF")
+             "NEE_VUT_REF", "NEE_VUT_REF_QC", "GPP_NT_VUT_REF", "RECO_NT_VUT_REF", "NEE_CUT_REF", "NEE_CUT_REF_QC", "GPP_NT_CUT_REF", "RECO_NT_CUT_REF" )
 
 read_hh <- function(zip_file, exdir = "data/raw/unzipped", keep = hh_vars) {
   hh_name <- grep("FLUXMET_HH", unzip(zip_file, list = TRUE)$Name, value = TRUE)
