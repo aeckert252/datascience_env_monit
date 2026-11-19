@@ -1,0 +1,82 @@
+---
+title: "Data summary of my five flux towers"
+author: "Anna Eckert"
+date: today
+format:
+  html:
+    toc: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+```{r}
+#| label: setup
+library(here)
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(knitr)
+
+source(here("R", "read_hh.R"))
+
+my_sites <- c("DE-Lnf", "FI-Let", "US-Kon", "CN-Lch", "AU-Cpr")
+
+snap_file <- list.files(here("data", "snapshots"), pattern = "\\.csv$", full.names = TRUE)
+snap <- read_csv(snap_file, show_col_types = FALSE) |>
+  filter(site_id %in% my_sites)
+
+# Einlesen der fünf Towers (mit Zwischenspeicher, damit das Rendern schneller ist)
+cache <- here("data", "processed", "all_hh.rds")
+if (file.exists(cache)) {
+  all_hh <- readRDS(cache)
+} else {
+  zips <- list.files(here("data", "raw"), pattern = "\\.zip$", full.names = TRUE)
+  all_hh <- bind_rows(lapply(zips, read_hh, exdir = here("data", "raw", "unzipped")))
+  saveRDS(all_hh, cache)
+}
+```
+
+# C1. Site overview
+
+Data source: FLUXNET Shuttle snapshot `r basename(snap_file)`. File versions: `r paste(snap$fluxnet_product_name, collapse = "; ")`. Half-hourly time stamps are in local standard time (no daylight-saving shift).
+
+```{r}
+#| label: c1-table
+overview <- snap |>
+  transmute(Site = site_id, Name = site_name,
+            Country = substr(site_id, 1, 2), IGBP = igbp,
+            Lat = round(location_lat, 2), Lon = round(location_long, 2),
+            `First year` = first_year, `Last year` = last_year,
+            Hub = data_hub, Citation = product_citation)
+kable(overview)
+```
+
+```{r}
+#| label: c1-map
+#| fig-cap: "Location of the five flux towers."
+world <- map_data("world")
+ggplot() +
+  geom_polygon(data = world, aes(long, lat, group = group),
+               fill = "grey90", colour = "grey60", linewidth = 0.2) +
+  geom_point(data = snap, aes(location_long, location_lat), colour = "red", size = 3) +
+  geom_text(data = snap, aes(location_long, location_lat, label = site_id),
+            nudge_y = 6, size = 3.5) +
+  coord_quickmap() +
+  labs(x = "Longitude (°)", y = "Latitude (°)") +
+  theme_minimal()
+```
+
+# C2. Data coverage
+
+# C3. Summary statistics
+
+# C4. Time series
+
+# C5. Diurnal cycles
+
+# C6. Your reading
+
+# Data and citation
+
