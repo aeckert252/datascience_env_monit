@@ -1,0 +1,365 @@
+---
+title: "Block 5: GPP and NEE during compound dry and hot extremes"
+author: "Anna Eckert"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    code-fold: true
+    code-summary: "Show code"
+    embed-resources: true
+    theme: cosmo
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: setup
+#| include: false
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(lubridate)
+library(stringr)
+library(knitr)
+
+# Possible locations of site_daily.csv (first existing one is used).
+# Relative paths only, so the report also renders from a fresh clone.
+candidates <- c(
+  "../data/processed/site_daily.csv",          # .qmd in myproject/reports/
+  "data/processed/site_daily.csv",             # working dir = myproject/
+  "myproject/data/processed/site_daily.csv"    # working dir = repository root
+)
+path <- candidates[file.exists(candidates)][1]
+if (is.na(path)) {
+  stop("site_daily.csv not found. Working directory is: ", getwd(),
+       "\nTried:\n", paste(candidates, collapse = "\n"),
+       "\nRun scripts/block5/09_merge.R first.")
+}
+
+raw <- read.csv(path)
+
+# Find the MODIS-based EVI column (own EVI computed from reflectances)
+evi_col <- grep("^evi$", names(raw), ignore.case = TRUE, value = TRUE)[1]
+if (is.na(evi_col)) evi_col <- grep("evi", names(raw), ignore.case = TRUE, value = TRUE)[1]
+if (is.na(evi_col)) {
+  stop("No EVI column found in site_daily.csv. Columns are:\n",
+       paste(names(raw), collapse = ", "))
+}
+message("Using EVI column: ", evi_col)
+
+daily <- raw |>
+  mutate(
+    date        = as.Date(date),
+    year        = year(date),
+    month_day   = format(date, "%m-%d"),
+    dheed_event = as.logical(dheed_event)
+  ) |>
+  select(
+    site_id, date, year, month_day, dheed_event,
+    GPP = GPP_NT_VUT_REF,      # gC m-2 d-1
+    NEE = NEE_VUT_REF,         # gC m-2 d-1
+    EVI = all_of(evi_col)      # dimensionless, 0-1
+  )
+```
+
+# 1. Question and hypothesis
+
+**Question.** Are GPP and NEE different on days of compound dry and hot extreme events (Dheed) than on the same calendar days in other years? MODIS EVI is used as a second dataset to describe the greenness of the towers.
+
+**Hypothesis.** During compound dry and hot events, GPP is **lower** and NEE is **higher** (less negative, i.e. a weaker carbon sink), because heat and soil drought close the stomata and reduce photosynthesis, while respiration is maintained or increases. MODIS EVI should follow GPP through the seasons, but react only slowly (days to weeks) to a short event. Whether this is visible on event days could not be tested here (see Section 2 and Discussion).
+
+**Why these towers.** Dheed only flags events at towers where an event box overlaps the tower record. A tower without events cannot be used for this question, so the test is restricted to a subset of the five towers. This makes the test small: it describes a few events, not a general rule.
+
+# 2. Data
+
+## 2.1 Provenance
+
+
+```{r}
+#| label: provenance
+prov <- tibble::tribble(
+  ~Dataset, ~`Variables used`, ~`Spatial resolution`, ~`Time resolution and period`,
+  ~`Downloaded on`, ~`Script and changes`, ~Citation,
+  "FLUXNET (daily, DD)", "GPP_NT_VUT_REF, NEE_VUT_REF (gC m-2 d-1)", "Tower footprint (~100 m - 1 km)",
+  "Daily; tower years", "2026-11-20", "Block 4 data (data/raw)", "Site citations; Pastorello et al. (2020)",
+  "Dheed", "Compound dry-hot event label (TRUE/FALSE)", "0.25° (~28 km)",
+  "Daily; 1950-2023", "2026-11-20", "03_dheed, default settings", "Weynants et al. (2025)",
+  "MODIS MOD13Q1 (C6.1)", "Red, NIR, blue -> own EVI; reliability 0-1 only", "250 m; 9 x 9 window (~2 x 2 km)",
+  "16-day composites, linearly interpolated to daily; only about 3 recent years per tower (see table below)", "2026-11-20", "08_modis_ndvi_evi, default settings (not extended to more years)",
+  "Didan (2021); ORNL DAAC (doi.org/10.3334/ORNLDAAC/1557)"
+)
+kable(prov, caption = "Provenance of the datasets.")
+```
+
+## 2.2 Data used at the towers
+
+```{r}
+#| label: days
+event_days <- daily |> filter(dheed_event %in% TRUE)
+
+event_calendar <- event_days |> distinct(site_id, month_day)
+
+# Reference days: non-event days at the same site on the same month-day
+reference_days <- daily |>
+  filter(dheed_event %in% FALSE) |>
+  semi_join(event_calendar, by = c("site_id", "month_day"))
+
+comparison <- bind_rows(
+  event_days     |> mutate(condition = "Extreme event"),
+  reference_days |> mutate(condition = "Reference days")
+) |>
+  mutate(condition = factor(condition, levels = c("Reference days", "Extreme event")))
+
+# Keep towers with at least one event day with valid GPP and NEE
+valid_sites <- event_days |>
+  group_by(site_id) |>
+  summarise(ok = any(!is.na(GPP) & !is.na(NEE)), .groups = "drop") |>
+  filter(ok) |>
+  pull(site_id)
+
+all_sites      <- sort(unique(daily$site_id))
+excluded_sites <- setdiff(all_sites, valid_sites)
+
+comparison <- comparison |> filter(site_id %in% valid_sites)
+```
+
+Towers in the dataset: `r paste(all_sites, collapse = ", ")`. Towers used: **`r paste(valid_sites, collapse = ", ")`**. Excluded (no event days, or no valid GPP/NEE on event days): `r paste(excluded_sites, collapse = ", ")`.
+
+**CN-Lch** has no Dheed event days in its record. **DE-Lnf** has 30 Dheed event days, but it was excluded from the analysis because its FLUXNET daily file contains no usable GPP or NEE. All flux columns, including the `_VUT_` variants used for the other towers (e.g. `NEE_VUT_REF`, `GPP_NT_VUT_REF`), and the `_CUT_` variants (e.g. `NEE_CUT_REF`, `NEE_CUT_MEAN`) are −9999 (missing) or 0. Only the standard-error columns (e.g. `NEE_CUT_SE`, `GPP_NT_CUT_SE`, `RECO_NT_CUT_SE`) contain numbers; these are uncertainty estimates, not fluxes, and cannot replace the flux values. No values were filled in or taken from another tower. DE-Lnf is therefore missing from the event comparison, although it would have had the most event days.
+
+```{r}
+#| label: evi-portrait
+portrait <- daily |>
+  filter(site_id %in% all_sites) |>
+  group_by(Tower = site_id) |>
+  summarise(
+    `First year` = min(year),
+    `Last year`  = max(year),
+    `Days with EVI` = sum(!is.na(EVI)),
+    `Mean EVI (-)`  = mean(EVI, na.rm = TRUE),
+    `Min EVI (-)`   = suppressWarnings(min(EVI, na.rm = TRUE)),
+    `Max EVI (-)`   = suppressWarnings(max(EVI, na.rm = TRUE)),
+    `Dheed event days` = sum(dheed_event %in% TRUE),
+    `Event days with EVI` = sum(dheed_event %in% TRUE & !is.na(EVI)),
+    .groups = "drop"
+  )
+kable(portrait, digits = 2,
+      caption = "EVI (MODIS) and Dheed events at the five towers.")
+```
+
+```{r}
+#| label: fig-timeseries
+#| fig-width: 11
+#| fig-height: 6
+#| fig-cap: "Daily GPP and MODIS EVI at the towers with events. Red points are Dheed event days. EVI is interpolated from 16-day composites."
+ts_data <- daily |>
+  filter(site_id %in% valid_sites) |>
+  pivot_longer(c(GPP, EVI), names_to = "variable", values_to = "value") |>
+  mutate(variable = factor(variable, levels = c("GPP", "EVI"),
+                           labels = c("GPP (gC m⁻² d⁻¹)", "EVI (-)")))
+
+ggplot(ts_data, aes(date, value)) +
+  geom_line(colour = "grey45", linewidth = 0.3, na.rm = TRUE) +
+  geom_point(data = ~ filter(.x, dheed_event %in% TRUE),
+             colour = "#C0392B", size = 1.8, na.rm = TRUE) +
+  facet_grid(variable ~ site_id, scales = "free", switch = "y") +
+  labs(title = "GPP and EVI through time", x = NULL, y = NULL) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    strip.placement = "outside",
+    strip.text = element_text(face = "bold"),
+    panel.grid.minor = element_blank(),
+    panel.spacing = unit(1, "lines")
+  )
+```
+
+# 3. Methods
+
+
+**Download.** Dheed (`03_dheed`) and MODIS (`08_modis_ndvi_evi`) were downloaded with the Block 5 scripts for the five towers. The MODIS script was run with its default settings, which download only about three recent years per tower. These years do not overlap with any Dheed event day, so EVI cannot be compared between event and reference days. I decided not to download more years for this report and to use EVI only descriptively (time series, GPP-EVI correlation). 
+
+**Extraction.** Dheed: the event label of the 0.25° cell (nearest cell) at the tower. MODIS: mean of a 9 x 9 pixel window (~2 x 2 km) around the tower; only pixels with reliability 0 (good) and 1 (marginal) were kept; reflectances were scaled by 0.0001 and EVI was computed per pixel before averaging.
+
+**Processing.** FLUXNET daily GPP and NEE (gC m⁻² d⁻¹; −9999 read as missing) were merged with EVI and the Dheed label by `site_id` and `date` (`09_merge`). The 16-day EVI was interpolated linearly to daily values. FLUXNET days are in local standard time, Dheed in UTC; this is not relevant for daily means. Missing values stay `NA` and were removed per variable only for the calculation.
+
+**Analysis.** For each tower, all event days (Dheed = TRUE) were compared with the reference days: all non-event days of the same tower that share a month-day with at least one event day. We report mean GPP and NEE for both groups and their difference, and the correlation between GPP and EVI in 16-day windows as a check of the greenness-productivity link.
+
+# 4. Results
+
+## 4.1 Event days vs. reference days
+
+```{r}
+#| label: stats
+long <- comparison |>
+  pivot_longer(c(GPP, NEE), names_to = "variable", values_to = "value") |>
+  drop_na(value)
+
+results <- long |>
+  group_by(site_id, variable, condition) |>
+  summarise(n = n(), mean = mean(value), sd = sd(value), .groups = "drop")
+
+delta <- results |>
+  select(site_id, variable, condition, n, mean) |>
+  pivot_wider(names_from = condition, values_from = c(n, mean)) |>
+  transmute(
+    Site = site_id,
+    Variable = variable,
+    `n (event)`        = `n_Extreme event`,
+    `n (reference)`    = `n_Reference days`,
+    `Mean (event)`     = `mean_Extreme event`,
+    `Mean (reference)` = `mean_Reference days`,
+    Difference = `Mean (event)` - `Mean (reference)`
+  ) |>
+  arrange(Variable, Site)
+
+kable(delta, digits = 2,
+      caption = "Means on event vs. reference days (gC m⁻² d⁻¹).")
+```
+
+```{r}
+#| label: fig-events
+#| fig-width: 10
+#| fig-height: 6.5
+#| fig-cap: "GPP and NEE on Dheed event days (red) compared with the same calendar days in other years (blue boxes). Points are individual days; white diamonds are means."
+n_text <- comparison |>
+  filter(!is.na(GPP)) |>
+  count(site_id, condition) |>
+  group_by(site_id) |>
+  summarise(txt = paste0(site_id[1], " (event ",
+                         sum(n[condition == "Extreme event"]), ", reference ",
+                         sum(n[condition == "Reference days"]), ")"),
+            .groups = "drop") |>
+  pull(txt) |>
+  paste(collapse = "; ")
+
+plot_data <- long |>
+  mutate(variable = factor(variable, levels = c("GPP", "NEE"),
+                           labels = c("GPP (gC m⁻² d⁻¹)", "NEE (gC m⁻² d⁻¹)")))
+
+pal <- c("Reference days" = "#6C8EAD", "Extreme event" = "#C0392B")
+
+ggplot(plot_data, aes(x = condition, y = value)) +
+  geom_hline(yintercept = 0, colour = "grey70", linewidth = 0.4) +
+  geom_boxplot(
+    data = ~ filter(.x, condition == "Reference days"),
+    aes(fill = condition), width = 0.5, alpha = 0.35,
+    outlier.shape = NA, colour = "grey30"
+  ) +
+  geom_jitter(aes(colour = condition), width = 0.12, size = 1.7, alpha = 0.55) +
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 3.6,
+               fill = "white", colour = "black", stroke = 1) +
+  facet_grid(variable ~ site_id, scales = "free_y", switch = "y") +
+  scale_fill_manual(values = pal, guide = "none") +
+  scale_colour_manual(values = pal, guide = "none") +
+  labs(
+    title = "Carbon exchange during compound dry and hot extremes",
+    subtitle = "Dheed event days vs. the same calendar days in other years",
+    x = NULL, y = NULL,
+    caption = str_wrap(paste0("n (GPP days) = ", n_text, "."), width = 110)
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title         = element_text(face = "bold", size = 15),
+    plot.subtitle      = element_text(colour = "grey35", margin = margin(b = 10)),
+    plot.caption       = element_text(hjust = 0, size = 9, colour = "grey35"),
+    strip.placement    = "outside",
+    strip.text         = element_text(face = "bold"),
+    panel.grid.minor   = element_blank(),
+    panel.grid.major.x = element_blank(),
+    panel.spacing      = unit(1.1, "lines"),
+    axis.text.x        = element_text(angle = 30, hjust = 1)
+  )
+```
+
+## 4.2 Does EVI follow GPP?
+
+```{r}
+#| label: cor
+d16 <- daily |>
+  filter(site_id %in% valid_sites) |>
+  mutate(win = as.integer(date) %/% 16) |>
+  group_by(site_id, win) |>
+  summarise(GPP = mean(GPP, na.rm = TRUE), EVI = mean(EVI, na.rm = TRUE),
+            .groups = "drop")
+
+cor_tbl <- d16 |>
+  group_by(Tower = site_id) |>
+  summarise(
+    `n (16-day windows)` = sum(!is.na(GPP) & !is.na(EVI)),
+    `Correlation r (GPP, EVI)` = cor(GPP, EVI, use = "complete.obs"),
+    .groups = "drop"
+  )
+kable(cor_tbl, digits = 2,
+      caption = "Correlation of 16-day mean GPP and EVI per tower.")
+```
+
+```{r}
+#| label: text-helpers
+#| include: false
+describe <- function(var) {
+  delta |>
+    filter(Variable == var) |>
+    mutate(txt = sprintf("%s: %.2f → %.2f", Site, `Mean (reference)`, `Mean (event)`)) |>
+    pull(txt) |>
+    paste(collapse = "; ")
+}
+direction <- function(var) {
+  x <- delta$Difference[delta$Variable == var]
+  n_missing <- sum(is.na(x))
+  x <- x[!is.na(x)]
+  out <- if (length(x) == 0) "not available"
+  else if (all(x < 0)) "lower at all towers with data"
+  else if (all(x > 0)) "higher at all towers with data"
+  else "inconsistent between towers"
+  if (n_missing > 0 && length(x) > 0)
+    out <- paste0(out, " (", n_missing, " tower(s) without values for one of the groups)")
+  out
+}
+```
+
+**Summary (mean reference → event):**
+
+- **GPP** (gC m⁻² d⁻¹) was **`r direction("GPP")`** on event days: `r describe("GPP")`.
+- **NEE** (gC m⁻² d⁻¹) was **`r direction("NEE")`**: `r describe("NEE")`. Negative NEE is uptake, so higher NEE means a weaker sink or a net source.
+- **EVI** could not be compared: on `r sum(portrait[["Event days with EVI"]])` of the `r sum(portrait[["Dheed event days"]])` event days an EVI value exists, because the downloaded MODIS data cover only about three recent years per tower, and these years contain no event days.
+
+The numbers rest on n = `r length(valid_sites)` towers and the event days given in the table.
+
+# 5. Discussion
+
+**Hypothesis.** GPP is `r direction("GPP")` and NEE is `r direction("NEE")` on event days, which fits the expected reduction of photosynthetic uptake during compound dry and hot extremes. The EVI part of the hypothesis could not be tested, because no EVI values exist on event days (see Methods). The EVI time series and the GPP-EVI correlation only describe the seasonal link between greenness and productivity. There only were 3 years of EVI data and its visible that there are less differences in AU-Cpr, which could be because of the dry grasland. 
+
+**Scale.**
+
+- *Dheed (0.25°, ~28 km)* is much coarser than the flux footprint (~100 m - 1 km). "Event at the tower" means that the event covers the grid cell or bounding box of the tower, not that the tower was necessarily hot and dry. A bounding box is a rectangle around an irregular shape, so some labelled days may not have been hit. This misclassification would make the event and reference groups more similar and weaken the contrast.
+- *MODIS (250 m pixels, 9 x 9 window ≈ 2 x 2 km)* is finer than Dheed but larger than the footprint. The window may include fields, roads or other vegetation types, so the EVI describes the surroundings rather than only what the tower sees. The 16-day composites are linearly interpolated to daily values, so EVI on a single event day is not a daily observation.
+
+**Limitations.**
+
+1. *Small n.* Only a few towers have events, and each has a few event days. Days within one event are not independent, so the numbers describe these events and are not a general statement. No significance test was used.
+2. *Reference days.* Matching by calendar day only roughly controls the seasonal cycle. Differences between years (phenology, management, disturbance) are not controlled. With more data I would match event and reference periods by weather type and test the link with the towers' own TA, VPD and ERA5-Land soil moisture.
+
+3. *EVI coverage.* The downloaded MODIS data do not overlap with any event day. With more years (the script option for the number of years) the EVI response could be tested.
+4. *Excluded towers.* CN-Lch has no event days and DE-Lnf has no usable GPP/NEE in its daily file, so the three towers with events and valid fluxes carry all conclusions.
+
+The results describe differences between event and reference days. They do not prove that the extreme events caused the changes.
+
+# 6. Data and citations
+
+- FLUXNET site citations: Nathaniel Brunsell (2026), AmeriFlux FLUXNET-1F US-Kon Konza Prairie LTER (KNZ), Ver. v1.3_r1 (2004-2019), AmeriFlux AMP, (Dataset). https://doi.org/10.17190/AMF/2316062
+Korkiakoski, M., Aaltonen, H., Aurela, M., Hatakka, J., Laurila, T., Lohila, A., Rainne, J., Tuovinen, J.-P. (2026). Fluxnet Archive Product from Lettosuo, 2010–2025, FLUXNET, https://hdl.handle.net/11676/lJA2M5NajEvo4LNStPxtuMhX
+Klosterhalfen, A., Knohl, A., Markwitz, C., Tiedemann, F. (2026). Fluxnet Archive Product from Leinefelde, 2002–2024, FLUXNET, https://hdl.handle.net/11676/Iy6uj-QptZzaR9BFnqiv4hF6
+Zhang, Y. (2026). Fluxnet Archive Product from Luancheng, 2008–2020, FLUXNET, https://hdl.handle.net/11676/z2J76ckVo1ywgV-s6QoYLklQ
+ 	Meyer, W., Ewenz, C., Koerber, G., Lubcke, T. (2026): Calperum Chowilla FLUXNET Release 2026_r1. Version 2026_r1. Terrestrial Ecosystem Research Network (TERN). 
+Pastorello, G. et al. (2020) The FLUXNET2015 dataset and the ONEFlux processing pipeline. *Scientific Data* 7, 225.
+- Weynants, M. et al. (2025) Dheed. *Earth System Science Data* 17, 6621. Data: doi.org/10.5281/zenodo.14884254
+- Didan, K. (2021) MOD13Q1 V061. NASA LP DAAC. doi.org/10.5067/MODIS/MOD13Q1.061. Subset service: ORNL DAAC, doi.org/10.3334/ORNLDAAC/1557
+- Huete, A. et al. (2002) Overview of the radiometric and biophysical performance of the MODIS vegetation indices. *Remote Sensing of Environment* 83, 195-213.
+- FLUXNET acknowledgement:  FLUXNET data products were produced and harmonized by eddy covariance regional networks and data processing centers, including AmeriFlux, ChinaFlux, European Fluxes Database, ICOS, JapanFlux, KoFlux, OzFlux, SAEON, and TERN. These products also include a modified version of ERA5 hourly data provided by
+the Copernicus Climate Change Service.
+
